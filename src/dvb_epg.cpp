@@ -204,7 +204,6 @@ static void parseComponentDescription(void *data, enum CR round, int *seen, bool
 	case 0x02: // Audio Info
         case 0x06: { // AVC Audio Info
             std::string audioinfo = lookup_audio(dc->component_type);
-//            std::string compar[] = "audio-subtitle";
              if (round == SUBTITLES && audioinfo.compare("audio-subtitle") == 0 && *seen < 4 ) {
                     if (testfield && *seen != 2) {
         		printf("\t<subtitles type=\"audio-described\">\n");
@@ -238,10 +237,6 @@ static void parseComponentDescription(void *data, enum CR round, int *seen, bool
 			}
             }
             if (round == SUBTITLES) {
-//		if (*testfield && *seen < 3){
-//                    printf("\t<subtitles type=\"audio-described\" />\n");
-//                   *testfield=false;
-//                }
             switch (dc->component_type) {
             case 0x01:
             case 0x10:
