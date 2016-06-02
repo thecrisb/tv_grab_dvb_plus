@@ -305,10 +305,27 @@ const struct int_lookup_table description_table[] = {
 };
 
 const struct int_lookup_table aspect_table[] = {
-    {0, "4:3"},		// 4/3
+    {0, "4:3"},         	// 4/3
     {1, "16:9"},		// 16/9 WITH PAN VECTORS
     {2, "16:9"},		// 16/9 WITHOUT
     {3, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
+//+cmb
+// 30 Hz
+    {4, "4:3"},         	// 4/3
+    {5, "16:9"},		// 16/9 WITH PAN VECTORS
+    {6, "16:9"},		// 16/9 WITHOUT
+    {7, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
+// HDTV
+    {8, "4:3"},         	// 4/3
+    {9, "16:9"},		// 16/9 WITH PAN VECTORS
+    {10, "16:9"},		// 16/9 WITHOUT
+    {11, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
+// HDTV 30Hz
+    {12, "4:3"},         	// 4/3
+    {13, "16:9"},		// 16/9 WITH PAN VECTORS
+    {14, "16:9"},		// 16/9 WITHOUT
+    {15, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
+//-cmb    
     {-1, NULL}
 };
 
@@ -317,10 +334,18 @@ const struct int_lookup_table audio_table[] = {
     {0x02, "mono"},		//dual mono - stereo??
     {0x03, "stereo"},
     {0x05, "surround"},
-    {0x04, "x-multilingual"},	// multilingual/channel
-    {0x40, "x-visuallyimpared"},	// visual impared sound
-    {0x41, "x-hardofhearing"},	// hard hearing sound
-    {-1, NULL}
+    {0x04, "bilingual"},	// multilingual/channel
+    {0x40, "audio-subtitle"},	// visual impared sound
+//    {0x41, "x-hardofhearing"},	// hard hearing sound
+////+cmb
+//    {0x42, "x-audiodescribed"},	// hard hearing sound
+    {0x43, "stereo"},	// hard hearing sound
+    {0x44, "audio-subtitle"},	// visual impared sound
+//    {0x41, "x-hardofhearing"},	// hard hearing sound
+
+    ////-cmb    
+
+    {-1, "BAD"}
 };
 
 /*

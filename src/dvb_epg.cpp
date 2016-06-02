@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <string>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -175,7 +176,7 @@ static void parseLongEventDescription(void *data) {
  * only output the first one of each (XMLTV can't cope with more than
  * one)
  */
-static void parseComponentDescription(void *data, enum CR round, int *seen) {
+static void parseComponentDescription(void *data, enum CR round, int *seen, bool *testfield) {
 	assert(GetDescriptorTag(data) == 0x50);
 	struct descr_component *dc = CastComponentDescriptor(data);
 	char buf[256];
@@ -186,18 +187,33 @@ static void parseComponentDescription(void *data, enum CR round, int *seen) {
 
 	switch (dc->stream_content) {
 	case 0x01: // Video Info
+        case 0x05: // AVC Video Info
 		if (round == VIDEO && !*seen) {
 			//if ((dc->component_type-1)&0x08) //HD TV
 			//if ((dc->component_type-1)&0x04) //30Hz else 25
 			printf("\t<video>\n");
 			printf("\t\t<aspect>%s</aspect>\n", lookup_aspect(
 					(dc->component_type - 1) & 0x03));
-			printf("\t</video>\n");
+                        if ((dc->component_type-1)>0x07 && *testfield) { //HD TV
+                                printf("\t\t<quality>HDTV</quality>\n");
+                        }
+                        printf("\t</video>\n");
 			(*seen)++;
 		}
 		break;
 	case 0x02: // Audio Info
-		if (round == AUDIO && !*seen) {
+        case 0x06: { // AVC Audio Info
+            std::string audioinfo = lookup_audio(dc->component_type);
+//            std::string compar[] = "audio-subtitle";
+             if (round == SUBTITLES && audioinfo.compare("audio-subtitle") == 0 && *seen < 4 ) {
+                    if (testfield && *seen != 2) {
+        		printf("\t<subtitles type=\"audio-described\">\n");
+                	printf("\t\t<language>%s</language>\n", lookup_language(&dc->lang_code1));
+                        printf("\t</subtitles>\n");
+                (*seen)+=4;
+                }
+               }
+		if (round == AUDIO && !*seen && audioinfo.compare("audio-subtitle") !=0) {
 			printf("\t<audio>\n");
 			printf("\t\t<stereo>%s</stereo>\n",
 					lookup_audio(dc->component_type));
@@ -213,20 +229,62 @@ static void parseComponentDescription(void *data, enum CR round, int *seen) {
 			}
 			(*seen)++;
 		}
-		break;
-		//case 0x03: // Teletext Info
-		//if (round == SUBTITLES) {
-		// FIXME: is there a suitable XMLTV output for this?
+                }
+                break;
+	case 0x03: // Teletext Info
+            if (round == LANGUAGE){ // need this BEFORE VIDEO runs
+                if ((dc->component_type)&0x40) {
+			*testfield=false;
+			}
+            }
+            if (round == SUBTITLES) {
+//		if (*testfield && *seen < 3){
+//                    printf("\t<subtitles type=\"audio-described\" />\n");
+//                   *testfield=false;
+//                }
+            switch (dc->component_type) {
+            case 0x01:
+            case 0x10:
+            case 0x11:
+            case 0x12:
+            case 0x13:
+            case 0x14:
+            case 0x15:
+            case 0x20:
+            case 0x21:
+            case 0x22:
+            case 0x23:
+            case 0x24:
+            case 0x25: 
+                if (testfield && *seen != 2 && *seen != 3 && *seen != 6 && *seen != 7) {
+		printf("\t<subtitles type=\"teletext\">\n");
+		printf("\t\t<language>%s</language>\n", lookup_language(&dc->lang_code1));
+		printf("\t</subtitles>\n");
+                (*seen)+=2;
+                }
+            break;
+            case 0x30:
+            case 0x31:
+                if (testfield && *seen != 1 && *seen != 3 && *seen != 5 && *seen != 7) {
+		printf("\t<subtitles type=\"deaf-signed\">\n");
+		printf("\t\t<language>%s</language>\n", lookup_language(&dc->lang_code1));
+		printf("\t</subtitles>\n");
+                (*seen)++;
+                }
+            }    
+                // FIXME: is there a suitable XMLTV output for this?
 		// if ((dc->component_type)&0x10) //subtitles
 		// if ((dc->component_type)&0x20) //subtitles for hard of hearing
 		//printf("\t<subtitles type=\"teletext\">\n");
 		//printf("\t\t<language>%s</language>\n", lookup_language(&dc->lang_code1));
 		//printf("\t</subtitles>\n");
-		//}
+            }
 		//break;
 		// case 0x04: // AC3 info
-	}
+            break;
+        }
 }
+
 
 static inline void set_bit(int *bf, int b) {
 	int i = b / 8 / sizeof(int);
@@ -332,10 +390,11 @@ static void parseServiceDescription(void *data) {
  */
 static void parseDescription(u_char *data, size_t len) {
 	int round, pds = 0;
-
+	bool notupscaled = true;
+        bool audiosubtitle = false;
 	for (round = 0; round < 8; round++) {
 		int seen = 0; // no title/language/video/audio/subtitles seen in this round
-		u_char *p;
+                u_char *p;
 		for (p = data; p < (u_char *) (data + len); p += DESCR_GEN_LEN
 				+ GetDescriptorLength(p)) {
 			struct descr_gen *desc = (struct descr_gen *) p;
@@ -358,13 +417,13 @@ static void parseDescription(u_char *data, size_t len) {
 					break;
 				case 0x50: //component desc [language] [video] [audio] [subtitles]
 					if (round == 4)
-						parseComponentDescription(desc, LANGUAGE, &seen);
+						parseComponentDescription(desc, LANGUAGE, &seen, &notupscaled);
 					else if (round == 5)
-						parseComponentDescription(desc, VIDEO, &seen);
+						parseComponentDescription(desc, VIDEO, &seen, &notupscaled);
 					else if (round == 6)
-						parseComponentDescription(desc, AUDIO, &seen);
+						parseComponentDescription(desc, AUDIO, &seen, &audiosubtitle);
 					else if (round == 7)
-						parseComponentDescription(desc, SUBTITLES, &seen);
+						parseComponentDescription(desc, SUBTITLES, &seen, &audiosubtitle);
 					break;
 				case 0x53: // CA Identifier Descriptor
 					break;
