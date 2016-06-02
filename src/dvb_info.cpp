@@ -309,7 +309,6 @@ const struct int_lookup_table aspect_table[] = {
     {1, "16:9"},		// 16/9 WITH PAN VECTORS
     {2, "16:9"},		// 16/9 WITHOUT
     {3, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
-//+cmb
 // 30 Hz
     {4, "4:3"},         	// 4/3
     {5, "16:9"},		// 16/9 WITH PAN VECTORS
@@ -325,7 +324,7 @@ const struct int_lookup_table aspect_table[] = {
     {13, "16:9"},		// 16/9 WITH PAN VECTORS
     {14, "16:9"},		// 16/9 WITHOUT
     {15, "2.21:1"},		// >16/9 or 2.21/1 XMLTV no likey
-//-cmb    
+    
     {-1, NULL}
 };
 
